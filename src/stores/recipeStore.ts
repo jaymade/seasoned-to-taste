@@ -2,6 +2,9 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { Recipe, RecipeFormData } from "../types";
 import { useAuthStore } from "./authStore";
+import { recipeService } from "../services/recipeService";
+
+const apiConfigured = Boolean(import.meta.env.VITE_API_URL);
 
 export const useRecipeStore = defineStore("recipe", () => {
   const recipes = ref<Recipe[]>([]);
@@ -45,6 +48,10 @@ export const useRecipeStore = defineStore("recipe", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (apiConfigured) {
+        recipes.value = await recipeService.list();
+        return;
+      }
       // TODO: Replace with actual API call
       // Simulating API delay
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -63,6 +70,10 @@ export const useRecipeStore = defineStore("recipe", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (apiConfigured) {
+        userRecipes.value = await recipeService.mine();
+        return;
+      }
       // TODO: Replace with actual API call
       await new Promise((resolve) => setTimeout(resolve, 500));
       userRecipes.value = recipes.value.filter((r) => r.authorId === userId);
@@ -83,6 +94,12 @@ export const useRecipeStore = defineStore("recipe", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (apiConfigured) {
+        const newRecipe = await recipeService.create(formData);
+        recipes.value.push(newRecipe);
+        userRecipes.value.push(newRecipe);
+        return newRecipe;
+      }
       const newRecipe: Recipe = {
         id: Math.random().toString(36).substr(2, 9),
         ...formData,
@@ -109,6 +126,14 @@ export const useRecipeStore = defineStore("recipe", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (apiConfigured) {
+        const updatedRecipe = await recipeService.update(recipeId, formData);
+        const index = recipes.value.findIndex((r) => r.id === recipeId);
+        if (index !== -1) recipes.value[index] = updatedRecipe;
+        const userIndex = userRecipes.value.findIndex((r) => r.id === recipeId);
+        if (userIndex !== -1) userRecipes.value[userIndex] = updatedRecipe;
+        return updatedRecipe;
+      }
       const index = recipes.value.findIndex((r) => r.id === recipeId);
       if (index === -1) {
         throw new Error("Recipe not found");
@@ -140,6 +165,12 @@ export const useRecipeStore = defineStore("recipe", () => {
     loading.value = true;
     error.value = null;
     try {
+      if (apiConfigured) {
+        await recipeService.remove(recipeId);
+        recipes.value = recipes.value.filter((r) => r.id !== recipeId);
+        userRecipes.value = userRecipes.value.filter((r) => r.id !== recipeId);
+        return;
+      }
       // TODO: Replace with actual API call
       recipes.value = recipes.value.filter((r) => r.id !== recipeId);
       userRecipes.value = userRecipes.value.filter((r) => r.id !== recipeId);

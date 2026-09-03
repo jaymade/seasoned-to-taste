@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Seasoned to Taste recipe API
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 256
+    Architectures: [arm64]
+    Environment:
+      Variables:
+        RECIPES_TABLE: !Ref RecipesTable
+
+Resources:
+  RecipesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: seasoned-to-taste-users
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireUppercase: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  RecipeApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowHeaders: ["Content-Type", "Authorization"]
+        AllowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            JwtConfiguration:
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience:
+                - !Ref UserPoolClient
+            IdentitySource: "$request.header.Authorization"
+
+  RecipeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/
+      Handler: src/handlers.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecipesTable
+      Events:
+        ListRecipes:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RecipeApi
+            Path: /recipes
+            Method: GET
+        GetRecipe:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RecipeApi
+            Path: /recipes/{id}
+            Method: GET
+        ListMyRecipes:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RecipeApi
+            Path: /recipes/mine
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CreateRecipe:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RecipeApi
+            Path: /recipes
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UpdateRecipe:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RecipeApi
+            Path: /recipes/{id}
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        DeleteRecipe:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref RecipeApi
+            Path: /recipes/{id}
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+Outputs:
+  ApiUrl:
+    Description: Recipe API URL
+    Value: !Sub https://${RecipeApi}.execute-api.${AWS::Region}.amazonaws.com
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  RecipesTableName:
+    Value: !Ref RecipesTable

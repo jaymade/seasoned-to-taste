@@ -1,6 +1,14 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { User } from "../types";
+import {
+  fetchAuthSession,
+  getCurrentUser,
+  signIn,
+  signOut,
+  signUp,
+} from "aws-amplify/auth";
+import { awsAuthConfigured } from "../config/amplify";
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null);
@@ -22,6 +30,10 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const login = async (email: string, _password: string) => {
+    if (awsAuthConfigured) {
+      await signIn({ username: email, password: _password });
+      return restoreSession();
+    }
     try {
       // TODO: Replace with actual API call
       const mockUser: User = {
@@ -42,6 +54,14 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const register = async (email: string, _password: string, name: string) => {
+    if (awsAuthConfigured) {
+      await signUp({
+        username: email,
+        password: _password,
+        options: { userAttributes: { email, name } },
+      });
+      return login(email, _password);
+    }
     try {
       // TODO: Replace with actual API call
       const mockUser: User = {
@@ -62,11 +82,32 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logout = () => {
+    if (awsAuthConfigured) void signOut();
     setUser(null);
     setToken(null);
   };
 
   const restoreSession = () => {
+    if (awsAuthConfigured) {
+      return getCurrentUser()
+        .then(async (currentUser) => {
+          const session = await fetchAuthSession();
+          setToken(session.tokens?.idToken?.toString() ?? null);
+          const restoredUser: User = {
+            id: currentUser.userId,
+            email: currentUser.signInDetails?.loginId ?? "",
+            name: currentUser.username,
+            createdAt: new Date().toISOString(),
+          };
+          setUser(restoredUser);
+          return restoredUser;
+        })
+        .catch(() => {
+          setUser(null);
+          setToken(null);
+          return null;
+        });
+    }
     if (token.value) {
       // TODO: Validate token with API and restore user info
       const mockUser: User = {
