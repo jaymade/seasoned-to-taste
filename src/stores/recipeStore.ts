@@ -41,6 +41,24 @@ export const useRecipeStore = defineStore("recipe", () => {
         updatedAt: new Date().toISOString(),
         isPublic: true,
       },
+      {
+        id: "2",
+        title: "Moo Jucie",
+        description: "Big ol glass of MILK, it does the body good",
+        author: "Your Kitchen",
+        authorId: "user1",
+        ingredients: [{ id: "1", name: "Milk", quantity: 16, unit: "oz" }],
+        servings: 1,
+        prepTime: 0,
+        cookTime: 0,
+        prepDirections:
+          "fetch solid glass\npour Milk into sed glass\nDrink Moo Juice\nif Spilt, Don't cry\nif done correctly, you will have a white mustache",
+        cookingDirections: "no bake dairy",
+        images: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isPublic: true,
+      },
     ];
   };
 

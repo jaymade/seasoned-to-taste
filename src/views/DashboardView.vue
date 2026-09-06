@@ -2,7 +2,7 @@
   <div class="dashboard">
     <header class="dashboard-header">
       <div class="header-content">
-        <h1>{{ authStore.user?.name }}'s Kitchen</h1>
+        <h1>Seasoned to Taste</h1>
         <button @click="logout" class="btn-logout">Logout</button>
       </div>
     </header>
