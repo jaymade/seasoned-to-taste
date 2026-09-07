@@ -45,7 +45,7 @@ export const useRecipeStore = defineStore("recipe", () => {
         id: "2",
         title: "Moo Jucie",
         description: "Big ol glass of MILK, it does the body good",
-        author: "Your Kitchen",
+        author: "Jay Made",
         authorId: "user1",
         ingredients: [{ id: "1", name: "Milk", quantity: 16, unit: "oz" }],
         servings: 1,
