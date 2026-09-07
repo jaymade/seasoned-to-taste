@@ -39,6 +39,8 @@ A Vue3 recipe collection app for friends and family to share and manage their fa
 
 ## Quick Start
 
+Requires Node.js 20.19.0 or later.
+
 ### Installation
 
 ```bash

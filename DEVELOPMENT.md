@@ -3,7 +3,7 @@
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
+- Node.js (v20.19.0 or higher)
 - npm (v7 or higher)
 
 ### Setup
